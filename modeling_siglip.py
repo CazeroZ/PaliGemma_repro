@@ -2,7 +2,7 @@ from typing import Optional, Tuple
 import torch
 import torch.nn as nn
 
-class SiglipVisonConfig:
+class SiglipVisionConfig:
     def __init__(
             self,
             hidden_size: int = 768,
@@ -30,7 +30,7 @@ class SiglipVisonConfig:
         self.num_image_tokens = num_image_tokens
 
 class SiglipVisionEmbeddings(nn.Module):
-    def __init__(self,config:SiglipVisonConfig):
+    def __init__(self,config:SiglipVisionConfig):
         super().__init__()
         self.config=config
         self.embed_dim=config.hidden_size
@@ -53,9 +53,68 @@ class SiglipVisionEmbeddings(nn.Module):
             persistent=False,
 
         )
+    def forward(self,pixel_values:torch.Tensor)->torch.Tensor:
+        _,_,height,width=pixel_values.shape # [Batch_Size,Channels,Height,Width]
+         # Convolve the `patch_size` kernel over the image, with no overlapping patches since the stride is equal to the kernel size
+        # The output of the convolution will have shape [Batch_Size, Embed_Dim, Num_Patches_H, Num_Patches_W]
+        # where Num_Patches_H = height // patch_size and Num_Patches_W = width // patch_size
+        patch_embeds=self.patch_embedings(pixel_values)
+        # [Batch_Size, Embed_Dim, Num_Patches_H, Num_Patches_W] -> [Batch_Size, Embed_Dim, Num_Patches]
+        # where Num_Patches = Num_Patches_H * Num_Patches_W
+        embeddings = patch_embeds.flatten(2)
+         # [Batch_Size, Embed_Dim, Num_Patches] -> [Batch_Size, Num_Patches, Embed_Dim]
+        embeddings = embeddings.transpose(1, 2)
+        # Add postion embeddings to each patch. Each positional embedding is a vector of size [Embed_dim]
+        embeddings=embeddings+self.position_embeddings(self.position_ids)
+        # [Batch_Size, Num_Patches, Embed_Dim]
+        return embeddings
 
+class SiglipMLP(nn.Module):
+    def __init__(self, config: SiglipVisionConfig):
+        super().__init__()
+        self.config = config
+        self.fc1=nn.Linear(config.hidden_size,config.intermedia_size)
+        self.fc2=nn.Linear(config.intermedia_size,config.hidden_size)
+    def forward(self,hidden_states:torch.Tensor)->torch.Tensor:
+        # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Intermedia_Size]
+        hidden_states=self.fc1(hidden_states)
+        # [Batch_Size, Num_Patches, Intermedia_Size] -> [Batch_Size, Num_Patches, Embed_Dim]
+        hidden_states=nn.functional.gelu(hidden_states,approximate="tanh")
+        hidden_states=self.fc2(hidden_states)
+        return hidden_states        
+
+
+class SiglipEncoderLayer(nn.Module):
+    def __init_(self,config:SiglipVisionConfig):
+        super().__init__()
+        self.embed_dim=config.hidden_size
+        self.self_attn=SiglipAttention(config)
+        self.layer_norm1=nn.LayerNorm(self.embed_dim,eps=config.layer_norm_eps)
+        self.mlp=SiglipMLP(config)
+        self.layer_norm2=nn.LayerNorm(self.embed_dim,eps=config.layer_norm_eps)
+    def forward(
+            self,
+            hidden_states:torch.Tensor,
+    )-> torch.Tensor:
+        # residual: [Batch_Size, Num_Patches, Embed_Dim] 
+        residual=hidden_states
+        #[Batch_Size, Num_Patches, Embed_Dim]-> [Batch_Size, Num_Patches, Embed_Dim]
+        hidden_states=self.layer_norm1(hidden_states)
+        #[Batch_Size, Num_Patches, Embed_Dim]-> [Batch_Size, Num_Patches, Embed_Dim]
+        hidden_states=self.self_attn(hidden_states=hidden_states)
+        #[Batch_Size, Num_Patches, Embed_Dim]
+        hidden_states=hidden_states+residual
+        # residual: [Batch_Size, Num_Patches, Embed_Dim] 
+        residual=hidden_states
+        #[Batch_Size, Num_Patches, Embed_Dim]-> [Batch_Size, Num_Patches, Embed_Dim]
+        hidden_states=self.layer_norm2(hidden_states)
+        #[Batch_Size, Num_Patches, Embed_Dim]-> [Batch_Size, Num_Patches, Embed_Dim]
+        hidden_states=self.mlp(hidden_states=hidden_states)
+        #[Batch_Size, Num_Patches, Embed_Dim]
+        hidden_states=hidden_states+residual
+        return hidden_states
 class SiglipVisonTransformer(nn.Module):
-    def __iniit__(self,config:SiglipVisonConfig):
+    def __iniit__(self,config:SiglipVisionConfig):
         super().__init__()
         self.config=config
         embed_dim=config.hidden_size
@@ -75,7 +134,7 @@ class SiglipVisonTransformer(nn.Module):
 
 class SiglipVisonModel(nn.Module):
     
-    def __init__(self,config:SiglipVisonConfig):
+    def __init__(self,config:SiglipVisionConfig):
         super().__init__()
         self.config = config
         self.vision_model=SiglipVisonTransformer(config)
