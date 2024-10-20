@@ -202,7 +202,7 @@ class SiglipVisonModel(nn.Module):
     def __init__(self,config:SiglipVisionConfig):
         super().__init__()
         self.config = config
-        self.vision_model=SiglipVisonTransformer(config)
+        self.vision_model=SiglipVisionTransformer(config)
 
     def forward(self,pixel_values)-> Tuple:
         # [Batch_Size,Channels,Height,Width] -> [Batch_Size,Num_Patches,Embd_Dim]
