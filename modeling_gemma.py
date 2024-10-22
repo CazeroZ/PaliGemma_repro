@@ -65,7 +65,7 @@ class GemmaConfig():
         self.rms_norm_eps=rms_norm_eps
         self.rope_theta=rope_theta
         self.attention_bias=attention_bias
-        self.attetion_dropout=attention_dropout
+        self.attention_dropout=attention_dropout
         self.pad_token_id=pad_token_id
 
 class PaliGemmaConfig:
@@ -86,19 +86,19 @@ class PaliGemmaConfig:
         self.image_token_index=image_token_index
         self.projection_dim=projection_dim
         self.hidden_size=hidden_size
-        self.vision_conifg=vision_config
+        self.vision_config=vision_config
         self.is_encoder_decoder=False
         self.pad_token_id=pad_token_id
         
 
-        self.vision_conifg=SiglipVisionConfig(**vision_config)
-        self.text_conig=text_config
+        self.vision_config=SiglipVisionConfig(**vision_config)
+        self.text_config=text_config
 
-        self.text_conig=GemmaConfig(**text_config,pad_token_id=pad_token_id)
-        self.vocab_size=self.text_conig.vocab_size
+        self.text_config=GemmaConfig(**text_config,pad_token_id=pad_token_id)
+        self.vocab_size=self.text_config.vocab_size
 
-        self.text_conig.num_image_tokens=(self.vision_conifg.image_size//self.vision_conifg.patch_size)**2
-        self.vision_conifg.projection_dim=projection_dim
+        self.text_config.num_image_tokens=(self.vision_config.image_size//self.vision_config.patch_size)**2
+        self.vision_config.projection_dim=projection_dim
 
 class GemmaRMSNorm(nn.Module):
     def __init__(self,dim:int,eps:float=1e-6):
@@ -410,7 +410,7 @@ class GemmaForCausalLM(nn.Module):
 class PaliGemmaMultiModalProjector(nn.Module):
     def __init__(self, config: PaliGemmaConfig):
         super().__init__()
-        self.linear = nn.Linear(config.vision_conifg.hidden_size, config.vision_conifg.projection_dim, bias=True)
+        self.linear = nn.Linear(config.vision_config.hidden_size, config.vision_config.projection_dim, bias=True)
 
     def forward(self, image_features):
         # [Batch_Size, Num_Patches, Hidden_Size] -> [Batch_Size, Num_Patches, Projection_Dim]

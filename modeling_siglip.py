@@ -76,6 +76,7 @@ class SiglipAttention(nn.Module):
         self.config=config
         self.embed_dim=config.hidden_size
         self.num_heads=config.num_attention_heads
+        self.head_dim = self.embed_dim // self.num_heads
         self.num_dim=self.embed_dim//self.num_heads
         self.scale=self.head_dim**-0.5 # Equivalent to 1/sqrt(head_dim)
         self.dropout=config.attention_dropout
@@ -136,7 +137,7 @@ class SiglipMLP(nn.Module):
 
 
 class SiglipEncoderLayer(nn.Module):
-    def __init_(self,config:SiglipVisionConfig):
+    def __init__(self,config:SiglipVisionConfig):
         super().__init__()
         self.embed_dim=config.hidden_size
         self.self_attn=SiglipAttention(config)
@@ -179,7 +180,7 @@ class SiglipEncoder(nn.Module):
         return hidden_states
 
 class SiglipVisionTransformer(nn.Module):
-    def __iniit__(self,config:SiglipVisionConfig):
+    def __init__(self, config:SiglipVisionConfig):
         super().__init__()
         self.config=config
         embed_dim=config.hidden_size
@@ -197,7 +198,7 @@ class SiglipVisionTransformer(nn.Module):
         return last_hidden_state
 
 
-class SiglipVisonModel(nn.Module):
+class SiglipVisionModel(nn.Module):
     
     def __init__(self,config:SiglipVisionConfig):
         super().__init__()
