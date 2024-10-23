@@ -1,10 +1,10 @@
 #!/bin/bash
 
 MODEL_PATH="/home/cazero/ML/code_from_scratch/VLM/paligemma-3b-pt-224"
-PROMPT="this building is "
+PROMPT="the famous building in Beijing, China, "
 IMAGE_FILE_PATH="test_images/tiantan.jpg"
-MAX_TOKENS_TO_GENERATE=100
-TEMPERATURE=0.8
+MAX_TOKENS_TO_GENERATE=200
+TEMPERATURE=0.6
 TOP_P=0.9
 DO_SAMPLE="False"
 ONLY_CPU="False"

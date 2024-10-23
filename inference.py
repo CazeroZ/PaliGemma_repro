@@ -83,7 +83,7 @@ def test_inference(
             next_token_logits=torch.softmax(next_token_logits/temperature,dim=-1)
             next_token=_sample_top_p(next_token_logits,top_p)
         else:
-            next_token=torch.argmax(next_token_logits,dim=-1)
+            next_token=torch.argmax(next_token_logits,dim=-1,keepdim=True)
         assert next_token.size()==(1,1)
         next_token=next_token.squeeze(0) # Remove batch dimension
         generate_tokens.append(next_token)
@@ -92,7 +92,7 @@ def test_inference(
             break
         # Append the next token to the input
         input_ids=next_token.unsqueeze(-1)
-        attention_mask=torch.cat([attention_mask,torch.ones(1,1)],device=input_ids.device,dim=-1)
+        attention_mask=torch.cat([attention_mask,torch.ones(1, 1, device=input_ids.device)], dim=-1)
 
     generate_tokens=torch.cat(generate_tokens,dim=-1)
     # Decode the generated tokens

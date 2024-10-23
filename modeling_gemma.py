@@ -271,10 +271,10 @@ class GemmaAttention(nn.Module):
         if attn_output.size()!=(bsz,self.num_heads,q_len,self.head_dim):
             raise ValueError(
                 f"attn_output should be of size {(bsz,self.num_heads,q_len,self.head_dim)}, but is"
-                f"{attn_output.siz()}"
+                f"{attn_output.size()}"
             )
         # Make sure the sequence length is the second dimension. #[Batch_Size, Num_Heads_Q, Seq_Len_Q,Head_Dim]->[Batch_Size, Seq_len_Q, Num_Heads_q,Head_Dim]
-        attn_output=attn_output.transpose(1,2).contiguous
+        attn_output=attn_output.transpose(1,2).contiguous()
         # Concatenate all the heads together.  [Batch_Size,Seq_len_Q, Num_Heads_Q, Head_Dim]-> [Batch_Size,Seq_len_Q,Num_Heads_Q* Head_Dim]
         attn_output=attn_output.view(bsz,q_len,-1)
 
@@ -330,7 +330,7 @@ class GemmaModel(nn.Module):
         super().__init__()
         self.padding_idx=config.pad_token_id
         self.vocab_size=config.vocab_size
-
+        self.config=config
         self.embed_tokens=nn.Embedding(config.vocab_size,config.hidden_size,self.padding_idx)
         self.layers=nn.ModuleList(
             [GemmaDecoderLayer(config,layer_idx) for layer_idx in range(config.num_hidden_layers)]
