@@ -22,7 +22,7 @@ def add_image_tokens_to_prompt(prefix_prompt,bos_token,image_seq_len,image_token
 
 def resize(image:Image,size:Tuple[int,int],resample:Image.Resampling=None,reducing_gap:Optional[int]=None,)->np.ndarray:
     height,width=size
-    reszied_image=image.rezie((width,height),resample=resample,reducing_gap=reducing_gap)
+    reszied_image=image.resize((width,height),resample=resample,reducing_gap=reducing_gap)
     return image.resize(size,resample=resample)
 
 def rescale(image:np.ndarray,scale:float,dtype:np.dtype=np.float32)->np.ndarray:
@@ -66,12 +66,12 @@ def process_images(
 
 class PaliGemmaProcessor:
     IMAGE_TOKEN="<image>"
-    def __iniit__(self,tokenizer,num_image_tokens:int,image_size:int):
+    def __init__(self,tokenizer,num_image_tokens:int,image_size:int):
         super().__init__()
         self.image_seq_length=num_image_tokens
         self.image_size=image_size
         # Tokenizer described here: https://github.com/google-research/big_vision/blob/main/big_vision/configs/proj/paligemma/README.md#tokenizer
-        tokens_to_add={"addtiona_special_tokens":[self.IMAGE_TOKEN]}
+        tokens_to_add={"additional_special_tokens":[self.IMAGE_TOKEN]}
         tokenizer.add_special_tokens(tokens_to_add)
         EXTRA_TOKENS=[
             f"<loc{i:04d}"for i in range(1024)

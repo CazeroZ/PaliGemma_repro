@@ -119,6 +119,7 @@ def main(
     print("Device in use:", device)
 
     print(f"Loading model")
+
     model,tokenizer=load_hf_model(model_path, device=device)
     model=model.to(device).eval()
 

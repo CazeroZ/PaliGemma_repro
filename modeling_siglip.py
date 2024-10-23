@@ -6,7 +6,7 @@ class SiglipVisionConfig:
     def __init__(
             self,
             hidden_size: int = 768,
-            intermedia_size=3072,
+            intermediate_size=3072,
             num_hidden_layers: int = 12,
             num_attention_heads: int = 12,
             num_channels: int = 3,
@@ -19,7 +19,7 @@ class SiglipVisionConfig:
     ):
         super().__init__()
         self.hidden_size = hidden_size
-        self.intermedia_size = intermedia_size
+        self.intermediate_size = intermediate_size
         self.num_hidden_layers = num_hidden_layers
         self.num_attention_heads = num_attention_heads
         self.num_channels = num_channels
@@ -58,7 +58,7 @@ class SiglipVisionEmbeddings(nn.Module):
          # Convolve the `patch_size` kernel over the image, with no overlapping patches since the stride is equal to the kernel size
         # The output of the convolution will have shape [Batch_Size, Embed_Dim, Num_Patches_H, Num_Patches_W]
         # where Num_Patches_H = height // patch_size and Num_Patches_W = width // patch_size
-        patch_embeds=self.patch_embedings(pixel_values)
+        patch_embeds=self.patch_embeddings(pixel_values)
         # [Batch_Size, Embed_Dim, Num_Patches_H, Num_Patches_W] -> [Batch_Size, Embed_Dim, Num_Patches]
         # where Num_Patches = Num_Patches_H * Num_Patches_W
         embeddings = patch_embeds.flatten(2)
@@ -125,12 +125,12 @@ class SiglipMLP(nn.Module):
     def __init__(self, config: SiglipVisionConfig):
         super().__init__()
         self.config = config
-        self.fc1=nn.Linear(config.hidden_size,config.intermedia_size)
-        self.fc2=nn.Linear(config.intermedia_size,config.hidden_size)
+        self.fc1=nn.Linear(config.hidden_size,config.intermediate_size)
+        self.fc2=nn.Linear(config.intermediate_size,config.hidden_size)
     def forward(self,hidden_states:torch.Tensor)->torch.Tensor:
-        # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Intermedia_Size]
+        # [Batch_Size, Num_Patches, Embed_Dim] -> [Batch_Size, Num_Patches, Intermediate_Size]
         hidden_states=self.fc1(hidden_states)
-        # [Batch_Size, Num_Patches, Intermedia_Size] -> [Batch_Size, Num_Patches, Embed_Dim]
+        # [Batch_Size, Num_Patches, Intermediate_Size] -> [Batch_Size, Num_Patches, Embed_Dim]
         hidden_states=nn.functional.gelu(hidden_states,approximate="tanh")
         hidden_states=self.fc2(hidden_states)
         return hidden_states        
@@ -153,7 +153,7 @@ class SiglipEncoderLayer(nn.Module):
         #[Batch_Size, Num_Patches, Embed_Dim]-> [Batch_Size, Num_Patches, Embed_Dim]
         hidden_states=self.layer_norm1(hidden_states)
         #[Batch_Size, Num_Patches, Embed_Dim]-> [Batch_Size, Num_Patches, Embed_Dim]
-        hidden_states=self.self_attn(hidden_states=hidden_states)
+        hidden_states,_=self.self_attn(hidden_states=hidden_states)
         #[Batch_Size, Num_Patches, Embed_Dim]
         hidden_states=hidden_states+residual
         # residual: [Batch_Size, Num_Patches, Embed_Dim] 

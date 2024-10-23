@@ -122,7 +122,7 @@ class GemmaMLP(nn.Module):
         self.hidden_size=config.hidden_size
         self.intermediate_size=config.intermediate_size
         self.gate_proj=nn.Linear(self.hidden_size,self.intermediate_size,bias=False)
-        self.up_proj=nn.Linear(self.intermediate_size,self.hidden_size,bias=False)
+        self.up_proj=nn.Linear(self.hidden_size,self.intermediate_size,bias=False)
         self.down_proj=nn.Linear(self.intermediate_size,self.hidden_size,bias=False)
     
     def forward(self,x):
@@ -143,7 +143,7 @@ def repeat_kv(hidden_states:torch.Tensor, n_rep:int)-> torch.Tensor:
     return hidden_states.reshape(batch,num_key_value_heads*n_rep,slen,head_dim)
 
 class GemmaRotaryEmbedding(nn.Module):
-    def __init(self,dim,max_position_embeddings=2048,base=10000,device=None):
+    def __init__(self,dim,max_position_embeddings=2048,base=10000,device=None):
         super().__init__( )
 
         self.dim=dim # It is set to the head_dim
@@ -189,6 +189,7 @@ def apply_rotary_pos_emb(q,k,cos,sin,unsqueeze_dim=1):
     return q_embed,k_embed
 class GemmaAttention(nn.Module):
     def __init__(self, config:PaliGemmaConfig,layer_idx:Optional[int]=None):
+        super().__init__()
         self.config=config
         self.layer_idx=layer_idx
         self.attention_dropout = config.attention_dropout
@@ -210,7 +211,7 @@ class GemmaAttention(nn.Module):
         # wk: [1024,2*128]
         # wv: [1024,2*128]
         self.q_proj=nn.Linear(self.hidden_size,self.num_heads*self.head_dim,bias=config.attention_bias)
-        self.k_proj=nn.Linear(self.hidden_size,self.num_key_value_heads*self.num_heads,bias=config.attention_bias)
+        self.k_proj=nn.Linear(self.hidden_size,self.num_key_value_heads*self.head_dim,bias=config.attention_bias)
         self.v_proj=nn.Linear(self.hidden_size,self.num_key_value_heads*self.head_dim,bias=config.attention_bias)
         self.o_proj=nn.Linear(self.num_heads*self.head_dim,self.hidden_size,bias=config.attention_bias)
         self.rotary_emb=GemmaRotaryEmbedding(
@@ -376,7 +377,7 @@ class GemmaForCausalLM(nn.Module):
     def get_input_embeddings(self):
         return self.model.embed_tokens
     def tie_weights(self):
-        self.lm_head.weight=self.modelf.embed_tokens.weight
+        self.lm_head.weight=self.model.embed_tokens.weight
     def forward(
         self,
         attention_mask:Optional[torch.Tensor]=None,
@@ -432,7 +433,7 @@ class PaliGemmaForConditionalGeneration(nn.Module):
         language_model=GemmaForCausalLM(config.text_config)
         self.language_model=language_model
 
-        self.pad_token_id=self.config.pad_token_id if self.config.pad_tokne_id is not None else -1
+        self.pad_token_id=self.config.pad_token_id if self.config.pad_token_id is not None else -1
         
     
     def tie_weights(self):
@@ -442,9 +443,9 @@ class PaliGemmaForConditionalGeneration(nn.Module):
     ):
         _,_,embed_dim=image_features.shape
         batch_size,sequence_len=input_ids.shape
-        dtype,device=inputs_embeds.dtype,inputs_embeds.device()
+        dtype,device=inputs_embeds.dtype,inputs_embeds.device
         # Shape: [Batch_Size, Seq_Len, Hidden_Size]
-        scaled_image_features=image_features/(self.confg.hidden_size**0.5)
+        scaled_image_features=image_features/(self.config.hidden_size**0.5)
 
         # Combine teh embeddings of the image tokens , the text tokens and the mask  out all the padding tokens
         final_embedding=torch.zeros(batch_size,sequence_len,embed_dim,dtype=dtype,device=inputs_embeds.device)
@@ -458,13 +459,13 @@ class PaliGemmaForConditionalGeneration(nn.Module):
         # We need to expand the masks to the embedding dimension otherwise we can't use them in torch.where
         text_mask_expanded=text_mask.unsqueeze(-1).expand(-1,-1,embed_dim)
         image_mask_expanded=image_mask.unsqueeze(-1).expand(-1,-1,embed_dim)
-        pad_mas_expanded=pad_mask.unsqueeze(-1).expand(-1,-1,embed_dim)
+        pad_mask_expanded=pad_mask.unsqueeze(-1).expand(-1,-1,embed_dim)
 
         final_embedding=torch.where(text_mask_expanded,inputs_embeds,final_embedding)
         # Insert image embeddings. We can't use torch.where because the sequence length of  scaled_image_features is not equal to the sequence length of the final embedding
-        final_embedding=torch.masked_scatter(image_mask_expanded,scaled_image_features)
+        final_embedding=final_embedding.masked_scatter(image_mask_expanded,scaled_image_features)
         # Zero out padding tokens
-        final_embedding=torch.where(pad_mask,torch.zeros_like(final_embedding),final_embedding)
+        final_embedding=torch.where(pad_mask_expanded,torch.zeros_like(final_embedding),final_embedding)
         
         #TODO : Implement the rest of the function
 
@@ -475,7 +476,7 @@ class PaliGemmaForConditionalGeneration(nn.Module):
 
         if kv_cache is None or kv_cache.num_items()==0:
             # Do not mask any token, 
-            casual_mask=torch.full(
+            causal_mask=torch.full(
                 (batch_size,q_len,q_len),fill_value=0,dtype=dtype,device=device
             )
         else:
@@ -484,7 +485,7 @@ class PaliGemmaForConditionalGeneration(nn.Module):
             kv_len=kv_cache.num_items()+q_len
             # Also in this case we don't need to mask anything, since each query should be able to attend all previous tokens. 
             # This only works when we have no padding
-            casual_mask=torch.full(
+            causal_mask=torch.full(
                 (batch_size,q_len,kv_len),fill_value=0,dtype=dtype,device=device
             ) 
 
@@ -503,6 +504,8 @@ class PaliGemmaForConditionalGeneration(nn.Module):
             position_ids=(attention_mask.cumsum(-1)).masked_fill((attention_mask==0),1).to(device)
 
         return final_embedding, causal_mask, position_ids
+    
+
     def forward(
         self,
         input_ids: torch.LongTensor=None,
