@@ -1,6 +1,6 @@
 # PaLI-GEMMA Model Reproduction
 
-A reproduction of **Google's PaLI-GEMMA** VLLm model, mainly for self-learning purposes. This project references [Google's official code](https://github.com/google-research/big_vision) and the associated [research paper](https://arxiv.org/abs/2407.07726). It includes detailed notes on tensor shape transformations within the network for deeper understanding.
+A reproduction of **Google's PaLI-GEMMA** (an open vision-language model), mainly for self-learning purposes. This project references [Google's official code](https://github.com/google-research/big_vision) and the associated [research paper](https://arxiv.org/abs/2407.07726). It includes detailed notes on tensor shape transformations within the network for deeper understanding.
 
 ### Key Points
 - **Focus**: Documenting tensor shape transformations at each layer for in-depth learning of the model structure.
