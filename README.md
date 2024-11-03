@@ -6,12 +6,11 @@ A reproduction of **Google's PaLI-GEMMA** (an open vision-language model), mainl
 - **Focus**: Documenting tensor shape transformations at each layer for in-depth learning of the model structure.
 - **Goal**: To provide a clear, readable version of PaLI-GEMMA for self-study.
 
-### Model Weights
-- [PaLI-GEMMA 3B on Hugging Face](https://huggingface.co/google/paligemma-3b-pt-224)
+
 
 ### Setup
 
-1. **Download Model Weights**: Download the model weights from [PaLI-GEMMA 3B on Hugging Face](https://huggingface.co/google/paligemma-3b-pt-224) and place them in the specified directory in the `launch_inference.sh` script.
+1. **Download Model Weights**: Download the model weights from [PaLI-GEMMA 3B on Hugging Face](https://huggingface.co/google/paligemma-3b-pt-224) 
    
 2. **Clone the repository** and install dependencies:
    ```bash
@@ -22,7 +21,7 @@ A reproduction of **Google's PaLI-GEMMA** (an open vision-language model), mainl
 
 3. **Configure and Run the Inference Script**:
    - Open `launch_inference.sh` and modify the following variables as needed:
-     - `MODEL_PATH`: Set this to the directory where the model weights are saved.
+     - `MODEL_PATH`: Set this to the directory where the downloaded model weights are saved.
      - `PROMPT`: Update with the prompt you want to use for inference.
      - `IMAGE_FILE_PATH`: Set this to the path of the input image.
 
